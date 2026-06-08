@@ -81,7 +81,7 @@ const PRODUCT_DEFS = (salesChannelId: string, shippingProfileId: string) => [
         sku: "BPC157-10MG",
         options: { Size: "10 mg" },
         manage_inventory: true,
-        prices: [{ amount: 9900, currency_code: "usd" }], // $99.00 placeholder
+        prices: [{ amount: 99, currency_code: "usd" }], // $99.00 placeholder (v2 = major units)
       },
     ],
   },
@@ -113,7 +113,7 @@ const PRODUCT_DEFS = (salesChannelId: string, shippingProfileId: string) => [
         sku: "GLP1-30MG",
         options: { Size: "30 mg" },
         manage_inventory: true,
-        prices: [{ amount: 18900, currency_code: "usd" }], // $189.00 placeholder
+        prices: [{ amount: 189, currency_code: "usd" }], // $189.00 placeholder (v2 = major units)
       },
     ],
   },
@@ -315,8 +315,8 @@ export default async function seedLongev({ container }: ExecArgs) {
             code: "standard",
           },
           prices: [
-            { currency_code: "usd", amount: 1000 },
-            { region_id: region.id, amount: 1000 },
+            { currency_code: "usd", amount: 10 },
+            { region_id: region.id, amount: 10 },
           ],
           rules: [
             { attribute: "enabled_in_store", value: "true", operator: "eq" },
@@ -335,8 +335,8 @@ export default async function seedLongev({ container }: ExecArgs) {
             code: "express",
           },
           prices: [
-            { currency_code: "usd", amount: 2500 },
-            { region_id: region.id, amount: 2500 },
+            { currency_code: "usd", amount: 25 },
+            { region_id: region.id, amount: 25 },
           ],
           rules: [
             { attribute: "enabled_in_store", value: "true", operator: "eq" },
