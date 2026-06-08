@@ -6,6 +6,7 @@
   "license": "UNLICENSED",
   "scripts": {
     "build": "medusa build",
+    "predeploy": "medusa db:migrate",
     "seed": "medusa exec ./src/scripts/seed.ts",
     "start": "medusa start",
     "dev": "medusa develop",

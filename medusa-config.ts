@@ -14,6 +14,10 @@ module.exports = defineConfig({
       cookieSecret: process.env.COOKIE_SECRET || "supersecret",
     },
   },
+  // Medusa Cloud usually sets this for you; harmless to declare for self-host/preview.
+  admin: {
+    backendUrl: process.env.MEDUSA_BACKEND_URL,
+  },
   modules: [
     // ---- Custom high-risk payment provider (NMI) ----
     {
