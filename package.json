@@ -4,7 +4,6 @@
   "description": "Longev Biotech — Medusa v2 commerce backend (RUO research peptides)",
   "private": true,
   "license": "UNLICENSED",
-  "type": "module",
   "scripts": {
     "build": "medusa build",
     "seed": "medusa exec ./src/scripts/seed.ts",
