@@ -1,8 +1,4 @@
-import {
-  AbstractPaymentProvider,
-  MedusaError,
-  PaymentSessionStatus,
-} from "@medusajs/framework/utils"
+import { AbstractPaymentProvider, MedusaError } from "@medusajs/framework/utils"
 import {
   AuthorizePaymentInput,
   AuthorizePaymentOutput,
@@ -38,7 +34,7 @@ import {
  *
  * Flow:
  *   storefront (Collect.js)  ->  payment_token
- *   initiatePayment()        ->  creates the Medusa payment session
+ *   initiatePayment()        ->  stores token + amount on the session
  *   authorizePayment()       ->  NMI type=auth using payment_token
  *   capturePayment()         ->  NMI type=capture using transactionid
  *   refundPayment()          ->  NMI type=refund
@@ -47,7 +43,7 @@ import {
  * To swap to Authorize.Net later, only the private `nmiRequest()` calls and the
  * field names change — the Medusa method contracts below stay identical.
  *
- * Targets @medusajs/framework 2.15.x. Run `npm run build` after install to typecheck.
+ * Targets @medusajs/framework 2.15.x.
  */
 
 type NmiOptions = {
@@ -62,6 +58,8 @@ type InjectedDependencies = {
 
 type NmiSessionData = {
   payment_token?: string
+  amount?: number
+  currency?: string
   transactionid?: string
   auth_code?: string
   avsresponse?: string
@@ -144,13 +142,17 @@ export default class NmiPaymentProviderService extends AbstractPaymentProvider<N
   async initiatePayment(
     input: InitiatePaymentInput
   ): Promise<InitiatePaymentOutput> {
-    // No money moves yet. We just open a session and carry forward the one-time
-    // card token that the storefront produced with Collect.js.
+    // No money moves yet. Open a session and carry the one-time card token
+    // (from Collect.js) plus the amount/currency for later authorization.
     const token = (input.data?.payment_token as string) || undefined
-    const data: NmiSessionData = { payment_token: token }
+    const data: NmiSessionData = {
+      payment_token: token,
+      amount: Number(input.amount),
+      currency: (input.currency_code || "usd").toUpperCase(),
+    }
 
     return {
-      id: `nmi_${input.context?.idempotency_key ?? Date.now()}`,
+      id: `nmi_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
       data: data as unknown as Record<string, unknown>,
     }
   }
@@ -159,8 +161,7 @@ export default class NmiPaymentProviderService extends AbstractPaymentProvider<N
     input: AuthorizePaymentInput
   ): Promise<AuthorizePaymentOutput> {
     const sessionData = (input.data ?? {}) as NmiSessionData
-    const token =
-      (input.context?.payment_token as string) || sessionData.payment_token
+    const token = sessionData.payment_token
 
     if (!token) {
       throw new MedusaError(
@@ -169,27 +170,26 @@ export default class NmiPaymentProviderService extends AbstractPaymentProvider<N
       )
     }
 
-    const amount = (input as unknown as { amount: number }).amount
-    const currency =
-      (input as unknown as { currency_code?: string }).currency_code || "usd"
+    const amount = sessionData.amount ?? 0
+    const currency = sessionData.currency ?? "USD"
 
     const r = await this.nmiRequest({
       type: "auth",
       payment_token: token,
       amount: this.toNmiAmount(amount),
-      currency: currency.toUpperCase(),
+      currency,
     })
 
     if (!this.isApproved(r)) {
       this.logger_.warn(`NMI auth declined: ${r.responsetext} (${r.response_code})`)
       return {
-        status: "error" as PaymentSessionStatus,
+        status: "error",
         data: { ...sessionData, last_response: r },
       }
     }
 
     return {
-      status: "authorized" as PaymentSessionStatus,
+      status: "authorized",
       data: {
         ...sessionData,
         transactionid: r.transactionid,
@@ -231,7 +231,7 @@ export default class NmiPaymentProviderService extends AbstractPaymentProvider<N
     input: RefundPaymentInput
   ): Promise<RefundPaymentOutput> {
     const data = (input.data ?? {}) as NmiSessionData
-    const amount = (input as unknown as { amount: number }).amount
+    const amount = Number((input as { amount?: number }).amount ?? data.amount ?? 0)
 
     const r = await this.nmiRequest({
       type: "refund",
@@ -272,10 +272,9 @@ export default class NmiPaymentProviderService extends AbstractPaymentProvider<N
   ): Promise<GetPaymentStatusOutput> {
     const data = (input.data ?? {}) as NmiSessionData
     if (!data.transactionid) {
-      return { status: "pending" as PaymentSessionStatus, data }
+      return { status: "pending", data }
     }
-    // NMI Query API could be called here for live status; we trust local state.
-    return { status: "authorized" as PaymentSessionStatus, data }
+    return { status: "authorized", data }
   }
 
   async retrievePayment(
