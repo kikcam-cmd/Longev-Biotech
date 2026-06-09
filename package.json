@@ -8,6 +8,7 @@
     "build": "medusa build",
     "predeploy": "medusa db:migrate",
     "seed": "medusa exec ./src/scripts/seed.ts",
+    "coa:upload": "medusa exec ./src/scripts/upload-coa.ts",
     "start": "medusa start",
     "dev": "medusa develop",
     "db:migrate": "medusa db:migrate",
