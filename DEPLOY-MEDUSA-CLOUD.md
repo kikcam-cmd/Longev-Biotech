@@ -41,6 +41,10 @@ Set only the vars you own (see `.env.template`):
 | `ADMIN_CORS` | your Cloud app URL |
 | `AUTH_CORS` | storefront + admin origins, comma-separated |
 | `NMI_SECURITY_KEY` | `placeholder` — any non-empty value (NMI is a stub; this only unblocks boot) |
+| `ADMIN_MAX_UPLOAD_FILE_SIZE` | optional; bytes. Defaults to 25 MB in config. Build-time → needs a rebuild to change |
+| `S3_BUCKET`, `S3_REGION`, `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY`, `S3_ENDPOINT`, `S3_FILE_URL` | **LIVE** — Cloudflare R2 (bucket `longev-media`). `S3_REGION=auto` (lowercase!); `S3_ACCESS_KEY_ID` = the 32-char key, NOT the token name. See `.env.template` |
+| `STOREFRONT_REVALIDATE_URL` | `https://www.longevbiotech.com/api/revalidate` — on-publish revalidation target |
+| `REVALIDATE_SECRET` | must MATCH the storefront's `REVALIDATE_SECRET` (`openssl rand -hex 32`) |
 
 > If Cloud offers `MEDUSA_BACKEND_URL`, let it set that; don't fight it.
 

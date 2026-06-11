@@ -48,21 +48,28 @@ receives a one-time `payment_token` — never a card number. PCI scope stays at 
 
 ## What's in this folder now
 
+> **Source of truth for current status is the root `../README.md`** (the project map —
+> "what's live, where we left off"). This file is backend-scoped reference.
+
 | Path | Purpose |
 |---|---|
-| `medusa-config.ts` | App config; registers the NMI payment provider. |
-| `src/modules/nmi/service.ts` | Custom NMI provider — auth / capture / refund / void / webhook. |
-| `src/modules/nmi/index.ts` | Registers the provider with Medusa's Payment module. |
+| `medusa-config.ts` | App config; registers NMI (conditional), the S3/R2 File module (when `S3_BUCKET` set), and the 25 MB admin upload cap. |
+| `src/modules/nmi/` | Custom NMI payment provider — auth / capture / refund / void / webhook (still a placeholder processor). |
+| `src/modules/ruo-attestation/` | Immutable RUO affirmation record linked to each order. |
+| `src/modules/lot-coa/` | Product lots + signed Certificate-of-Analysis serving (`/store/lots/:lot/coa`). |
+| `src/subscribers/order-placed.ts` | Order hook (email/Slack — wiring TBD). |
+| `src/subscribers/product-revalidate.ts` | On product/variant change, pings the storefront `/api/revalidate` (LIVE). |
+| `src/scripts/seed.ts` | Self-contained seed: BPC-157 + GLP-1 catalog, US/USD region, sample lot. |
+| `src/scripts/upload-coa.ts` | `npm run coa:upload -- <lot> <file>` — upload a CoA + set `coa_file_id`. |
 | `.env.template` | Required environment variables (copy to `.env`). |
 | `package.json` / `tsconfig.json` | Medusa v2.15.5 project setup. |
 
-### Still to build (tracked stages)
-- `src/modules/ruo-attestation` — immutable RUO affirmation record linked to each order.
-- `src/modules/lot-coa` — product lots + signed Certificate-of-Analysis downloads.
-- `src/subscribers/order-placed.ts` — order/shipping email + Slack notification.
-- `src/scripts/seed.ts` — seed BPC-157 + GLP-1 catalog and regions.
-- Admin widgets — view RUO attestation + CoA on the order/product pages.
-- Storefront — rebranded Next.js starter wired to this backend.
+### Still to build / open
+- **Per-lot CoA viewer** — upload the real CoA for `BPC157-2406-A` (`npm run coa:upload`; file
+  still in the old Supabase `coa` bucket) + add a `GET /store/products/:id/lots` endpoint.
+- **Real payments** — choose a high-risk processor; swap or remove the NMI placeholder.
+- **Order notifications** — wire `order-placed.ts` to email/Slack.
+- (Done & live: ruo-attestation, lot-coa, seed, R2 storage, on-publish revalidation, storefront.)
 
 ---
 
