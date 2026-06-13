@@ -1,5 +1,9 @@
 import { MedusaRequest, MedusaResponse } from "@medusajs/framework/http"
-import { MedusaError, Modules } from "@medusajs/framework/utils"
+import {
+  ContainerRegistrationKeys,
+  MedusaError,
+  Modules,
+} from "@medusajs/framework/utils"
 import { completeCartWorkflow } from "@medusajs/medusa/core-flows"
 import { RUO_ATTESTATION_MODULE } from "../../../../../modules/ruo-attestation"
 import { ATTESTATION_TEXT } from "../../../../../modules/ruo-attestation/constants"
@@ -31,20 +35,32 @@ async function attributeReferral(
   try {
     const referral: any = req.scope.resolve(REFERRAL_MODULE)
     const [affiliate] = await referral.listAffiliates({ code })
-    // Unknown code, or self-referral (the buyer is the affiliate) → skip.
-    if (!affiliate || affiliate.customer_id === order.customer_id) return
+    if (!affiliate) return // unknown code
+
+    // completeCartWorkflow returns a minimal { id } result, so re-read the order
+    // through the Query graph to get the computed total + the real customer_id.
+    const query = req.scope.resolve(ContainerRegistrationKeys.QUERY)
+    const { data } = await query.graph({
+      entity: "order",
+      fields: ["id", "customer_id", "total"],
+      filters: { id: order.id },
+    })
+    const full: any = data?.[0] ?? {}
+
+    // Self-referral guard: the buyer cannot be the affiliate.
+    if (full.customer_id && full.customer_id === affiliate.customer_id) return
 
     await referral.createReferralOrders({
       code: affiliate.code,
       affiliate_customer_id: affiliate.customer_id,
       order_id: order.id,
-      order_total: Number(order.total) || 0,
+      order_total: Math.round(Number(full.total) || 0),
     })
 
     try {
       const orderModule = req.scope.resolve(Modules.ORDER)
       await orderModule.updateOrders(order.id, {
-        metadata: { ...(order.metadata ?? {}), referral_code: affiliate.code },
+        metadata: { referral_code: affiliate.code },
       })
     } catch {
       // metadata stamp is non-essential (admin convenience only)
