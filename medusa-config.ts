@@ -95,6 +95,37 @@ if (process.env.NMI_SECURITY_KEY) {
   })
 }
 
+// ---- Email notifications (Resend) ----
+// Register the Notification module with our Resend provider ONLY when an API key is
+// set — same gating as the S3 and NMI providers, so the backend still boots without
+// email configured. When unset, no provider handles the "email" channel, so a
+// createNotifications({channel:"email"}) call throws "no notification provider for
+// channel: email" — the subscribers swallow that in try/catch, so register/order flows
+// still succeed (just no email). Provider lives in src/modules/resend-notification.
+//   from    → RESEND_FROM     (default: Longev Biotech <noreply@longevbiotech.com>)
+//   replyTo → RESEND_REPLY_TO (default: support@longevbiotech.com — the Proton inbox)
+if (process.env.RESEND_API_KEY) {
+  modules.push({
+    resolve: "@medusajs/medusa/notification",
+    options: {
+      providers: [
+        {
+          resolve: "./src/modules/resend-notification",
+          id: "resend",
+          options: {
+            channels: ["email"],
+            apiKey: process.env.RESEND_API_KEY,
+            from:
+              process.env.RESEND_FROM ||
+              "Longev Biotech <noreply@longevbiotech.com>",
+            replyTo: process.env.RESEND_REPLY_TO || "support@longevbiotech.com",
+          },
+        },
+      ],
+    },
+  })
+}
+
 module.exports = defineConfig({
   projectConfig: {
     databaseUrl: process.env.DATABASE_URL,
