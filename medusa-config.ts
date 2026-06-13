@@ -6,6 +6,8 @@ const modules: any[] = [
   // ---- Compliance modules ----
   { resolve: "./src/modules/ruo-attestation" },
   { resolve: "./src/modules/lot-coa" },
+  // ---- Referral / affiliate program (no payouts; tracking only) ----
+  { resolve: "./src/modules/referral" },
 ]
 
 // ---- File storage (product media + Certificates of Analysis) ----
