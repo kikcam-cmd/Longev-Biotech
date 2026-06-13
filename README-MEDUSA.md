@@ -57,7 +57,11 @@ receives a one-time `payment_token` — never a card number. PCI scope stays at 
 | `src/modules/nmi/` | Custom NMI payment provider — auth / capture / refund / void / webhook (still a placeholder processor). |
 | `src/modules/ruo-attestation/` | Immutable RUO affirmation record linked to each order. |
 | `src/modules/lot-coa/` | Product lots + signed Certificate-of-Analysis serving (`/store/lots/:lot/coa`). |
-| `src/subscribers/order-placed.ts` | Order hook (email/Slack — wiring TBD). |
+| `src/modules/referral/` | **Affiliate/referral program (no payouts).** Tables `affiliate {customer_id, code}` + `referral_order {code, affiliate_customer_id, order_id, order_total}`. Own queryable tables (NOT order.metadata JSONB). Migration `Migration20260613225050.ts`. |
+| `src/api/middlewares.ts` | Requires `authenticate("customer")` on `/store/affiliate`. |
+| `src/api/store/affiliate/route.ts` | `POST` = mint a code (instant self-serve, idempotent `LB-XXXXXX`); `GET` = code + referred-order count + revenue. |
+| `src/api/store/carts/[id]/ruo-complete/route.ts` | RUO gate + **referral attribution**: reads `referral_code`, re-reads the order via the Query graph (the workflow result is only `{id}`), guards self-referral, writes a `referral_order` + stamps `order.metadata.referral_code`. Best-effort (try/catch) so it never fails an order. |
+| `src/subscribers/order-placed.ts` | Order hook (email/Slack — wiring TBD; this is C2/S3). |
 | `src/subscribers/product-revalidate.ts` | On product/variant change, pings the storefront `/api/revalidate` (LIVE). |
 | `src/scripts/seed.ts` | Self-contained seed: BPC-157 + GLP-1 catalog, US/USD region, sample lot. |
 | `src/scripts/upload-coa.ts` | `npm run coa:upload -- <lot> <file>` — upload a CoA + set `coa_file_id`. |
@@ -65,11 +69,15 @@ receives a one-time `payment_token` — never a card number. PCI scope stays at 
 | `package.json` / `tsconfig.json` | Medusa v2.15.5 project setup. |
 
 ### Still to build / open
+- **Order notifications + welcome email (C2 / S3 — next up)** — wire a Resend notification
+  provider; send a welcome email on customer register (S3) and buyer/ops emails on order placed
+  (`order-placed.ts`). This is the next planned slice.
+- **Real payments (C1)** — choose a high-risk processor; swap or remove the NMI placeholder.
+  Affiliate payouts depend on this (the referral module tracks orders but computes no commission).
 - **Per-lot CoA viewer** — upload the real CoA for `BPC157-2406-A` (`npm run coa:upload`; file
   still in the old Supabase `coa` bucket) + add a `GET /store/products/:id/lots` endpoint.
-- **Real payments** — choose a high-risk processor; swap or remove the NMI placeholder.
-- **Order notifications** — wire `order-placed.ts` to email/Slack.
-- (Done & live: ruo-attestation, lot-coa, seed, R2 storage, on-publish revalidation, storefront.)
+- (Done & live: ruo-attestation, lot-coa, **referral/affiliate**, seed, R2 storage, on-publish
+  revalidation, storefront, sign-in-for-pricing gate.)
 
 ---
 
