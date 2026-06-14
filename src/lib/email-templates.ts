@@ -150,6 +150,59 @@ ${RUO_LINE}
 }
 
 /* ------------------------------------------------------------------ */
+/* Password reset — sent on auth.password_reset (customer actor only)   */
+/* ------------------------------------------------------------------ */
+
+export function buildPasswordResetEmail(opts: {
+  resetUrl: string
+  storeUrl: string
+  expiresMinutes?: number
+}): EmailParts {
+  const { resetUrl, storeUrl } = opts
+  const mins = opts.expiresMinutes ?? 15
+
+  const bodyHtml = `
+    <p style="margin:0 0 14px; font-size:15px; line-height:1.6; color:${INK};">
+      We received a request to reset the password for your Longev Biotech account.
+      Click the button below to choose a new one.
+    </p>
+    ${btn(resetUrl, "Reset password")}
+    <p style="margin:0 0 14px; font-size:13px; line-height:1.6; color:${MUTED};">
+      This link expires in ${mins} minutes. If the button doesn't work, copy and paste
+      this address into your browser:<br/>
+      <a href="${escapeAttr(resetUrl)}" style="color:${NAVY}; word-break:break-all;">${escapeHtml(
+    resetUrl
+  )}</a>
+    </p>
+    <p style="margin:0; font-size:13px; line-height:1.6; color:${MUTED};">
+      If you didn't request a password reset, you can safely ignore this email — your
+      password won't change.
+    </p>`
+
+  const text = `Reset your Longev Biotech password
+
+We received a request to reset the password for your Longev Biotech account. Open the link below to choose a new one (it expires in ${mins} minutes):
+
+${resetUrl}
+
+If you didn't request a password reset, you can safely ignore this email — your password won't change.
+
+${RUO_LINE}
+© 2026 Longev Biotech · longevbiotech.com`
+
+  return {
+    subject: "Reset your Longev Biotech password",
+    html: shell({
+      preheader: `Reset your password — this link expires in ${mins} minutes.`,
+      heading: "Reset your password",
+      bodyHtml,
+      storeUrl,
+    }),
+    text,
+  }
+}
+
+/* ------------------------------------------------------------------ */
 /* Order confirmation — sent to the buyer on order.placed             */
 /* ------------------------------------------------------------------ */
 
