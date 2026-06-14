@@ -317,6 +317,59 @@ ${items.map((it) => `- ${it.title} × ${it.quantity}  ${money(it.unitPrice * it.
   }
 }
 
+/* ------------------------------------------------------------------ */
+/* Contact inquiry — sent TO support on a contact-form submission      */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Internal email for a contact-form submission. Sent to the support inbox; the
+ * subscriber/route sets `provider_data.reply_to` to the visitor's address so
+ * support can reply to them directly with one click. The visitor's name + email
+ * are also rendered in the body as a fallback in case reply-to is stripped.
+ *
+ * `message` may contain newlines from a <textarea>; we escape first, then turn
+ * \n into <br/> so the layout is preserved without opening an HTML-injection hole.
+ */
+export function buildContactEmail(opts: {
+  name: string
+  email: string
+  subject: string
+  message: string
+  storeUrl: string
+}): EmailParts {
+  const { name, email, subject, message, storeUrl } = opts
+  const messageHtml = escapeHtml(message).replace(/\r?\n/g, "<br/>")
+
+  const bodyHtml = `
+    <p style="margin:0 0 4px; font-size:13px; color:${MUTED};">From</p>
+    <p style="margin:0 0 16px; font-size:15px; color:${INK};"><strong>${escapeHtml(
+      name
+    )}</strong> &lt;<a href="mailto:${escapeAttr(email)}" style="color:${NAVY};">${escapeHtml(
+    email
+  )}</a>&gt;</p>
+    <p style="margin:0 0 4px; font-size:13px; color:${MUTED};">Subject</p>
+    <p style="margin:0 0 16px; font-size:15px; color:${INK};">${escapeHtml(subject)}</p>
+    <p style="margin:0 0 4px; font-size:13px; color:${MUTED};">Message</p>
+    <p style="margin:0; font-size:15px; line-height:1.7; color:${INK};">${messageHtml}</p>`
+
+  const text = `New contact inquiry
+From: ${name} <${email}>
+Subject: ${subject}
+
+${message}`
+
+  return {
+    subject: `📨 Contact: ${subject} — ${name}`,
+    html: shell({
+      preheader: `${name} <${email}> — ${subject}`,
+      heading: "New contact inquiry",
+      bodyHtml,
+      storeUrl,
+    }),
+    text,
+  }
+}
+
 /**
  * Format a Medusa v2 amount. v2 stores prices in MAJOR units (99 = $99, not cents),
  * so no /100. Falls back to a plain `${code} ${n}` string if Intl lacks the currency.
