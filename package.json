@@ -10,6 +10,7 @@
     "seed": "medusa exec ./src/scripts/seed.ts",
     "coa:upload": "medusa exec ./src/scripts/upload-coa.ts",
     "reta:seed": "medusa exec ./src/scripts/seed-retatrutide.ts",
+    "reta:specs": "medusa exec ./src/scripts/update-reta-specs.ts",
     "shipping:free": "medusa exec ./src/scripts/set-free-shipping.ts",
     "bac:seed": "medusa exec ./src/scripts/seed-bac-water.ts",
     "volume:tiers": "medusa exec ./src/scripts/set-volume-tiers.ts",
