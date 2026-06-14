@@ -18,6 +18,15 @@ const Lot = model
     measured_mass: model.number().nullable(),
     coa_file_id: model.text().nullable(),
     released_at: model.dateTime().nullable(),
+    // Display fields for the per-lot CoA hero. Stored verbatim as text so the card
+    // renders exactly what the lab certificate states — no numeric coercion or
+    // precision loss (e.g. "99.54%", "≤0.05 EU/mL"). `purity_pct` (integer) is kept
+    // for any numeric use; `purity_text` is what the card actually shows.
+    purity_text: model.text().nullable(),
+    strength: model.text().nullable(),
+    lab_name: model.text().nullable(),
+    test_method: model.text().nullable(),
+    endotoxin: model.text().nullable(),
   })
   .indexes([
     { on: ["product_id", "lot_number"], unique: true },
