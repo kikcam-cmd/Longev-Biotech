@@ -12,6 +12,7 @@
     "reta:seed": "medusa exec ./src/scripts/seed-retatrutide.ts",
     "shipping:free": "medusa exec ./src/scripts/set-free-shipping.ts",
     "bac:seed": "medusa exec ./src/scripts/seed-bac-water.ts",
+    "volume:tiers": "medusa exec ./src/scripts/set-volume-tiers.ts",
     "start": "medusa start",
     "dev": "medusa develop",
     "db:migrate": "medusa db:migrate",
