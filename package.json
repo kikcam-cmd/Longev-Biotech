@@ -13,6 +13,7 @@
     "shipping:free": "medusa exec ./src/scripts/set-free-shipping.ts",
     "bac:seed": "medusa exec ./src/scripts/seed-bac-water.ts",
     "volume:tiers": "medusa exec ./src/scripts/set-volume-tiers.ts",
+    "customers:delete-test": "medusa exec ./src/scripts/delete-test-customers.ts",
     "start": "medusa start",
     "dev": "medusa develop",
     "db:migrate": "medusa db:migrate",
