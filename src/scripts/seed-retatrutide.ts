@@ -51,7 +51,9 @@ export default async function seedRetatrutide({ container, args }: ExecArgs) {
   const salesChannelModuleService = container.resolve(Modules.SALES_CHANNEL)
   const fulfillmentModuleService = container.resolve(Modules.FULFILLMENT)
 
-  const [rawCoaPath] = args ?? []
+  // `medusa exec` splits args on spaces and strips quotes, so a path like
+  // ".../Screenshot 2026-06-13 at X.png" arrives as several args — rejoin them.
+  const rawCoaPath = (args ?? []).join(" ").trim()
 
   // ── Resolve the existing catalog scaffolding (must already be seeded) ──────
   const [salesChannel] = await salesChannelModuleService.listSalesChannels({
