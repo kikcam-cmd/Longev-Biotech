@@ -1,5 +1,5 @@
 import type { SubscriberArgs, SubscriberConfig } from "@medusajs/framework"
-import { Modules } from "@medusajs/framework/utils"
+import { ContainerRegistrationKeys, Modules } from "@medusajs/framework/utils"
 import {
   buildOrderConfirmationEmail,
   buildOpsAlertEmail,
@@ -15,18 +15,42 @@ import {
  * roll back a placed order. If RESEND_API_KEY is unset, no provider handles the email
  * channel and createNotifications throws "no notification provider for channel: email";
  * the try/catch swallows it, so the order still completes (just no email).
+ *
+ * NOTE: the order is read via the Query graph with FULL items (`items.*`), NOT
+ * `orderModule.retrieveOrder(id, { relations: ["items"] })`. Medusa only computes the
+ * order-level totals (`total`, `item_total`) when the full items relation is loaded —
+ * a partial item selection (or the module-service relations form) leaves `total` at the
+ * shipping amount only (it rendered as $0.00 in the first send-test). The store route and
+ * the referral attribution use this same graph path.
  */
 export default async function orderPlacedHandler({
   event,
   container,
 }: SubscriberArgs<{ id: string }>) {
   const logger = container.resolve("logger")
-  const orderModule = container.resolve(Modules.ORDER)
+  const query = container.resolve(ContainerRegistrationKeys.QUERY)
   const notificationModule = container.resolve(Modules.NOTIFICATION)
 
-  const order = await orderModule.retrieveOrder(event.data.id, {
-    relations: ["items", "shipping_address"],
+  const { data } = await query.graph({
+    entity: "order",
+    fields: [
+      "id",
+      "display_id",
+      "email",
+      "currency_code",
+      "total",
+      "item_total",
+      "shipping_total",
+      "items.*",
+      "shipping_address.first_name",
+    ],
+    filters: { id: event.data.id },
   })
+  const order: any = data?.[0]
+  if (!order) {
+    logger.warn(`[order.placed] order ${event.data.id} not found — skipping emails`)
+    return
+  }
 
   logger.info(
     `[order.placed] ${order.display_id} — ${order.email} — ${order.items?.length ?? 0} item(s)`
@@ -40,7 +64,8 @@ export default async function orderPlacedHandler({
 
   const storeUrl = process.env.STOREFRONT_URL || "https://www.longevbiotech.com"
   const currencyCode = order.currency_code || "usd"
-  const total = num(order.total)
+  // Prefer the computed grand total; fall back to item + shipping totals defensively.
+  const total = num(order.total) || num(order.item_total) + num(order.shipping_total)
 
   // --- Buyer confirmation ---
   if (order.email) {
