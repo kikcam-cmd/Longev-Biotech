@@ -10,6 +10,7 @@
     "seed": "medusa exec ./src/scripts/seed.ts",
     "coa:upload": "medusa exec ./src/scripts/upload-coa.ts",
     "reta:seed": "medusa exec ./src/scripts/seed-retatrutide.ts",
+    "shipping:free": "medusa exec ./src/scripts/set-free-shipping.ts",
     "start": "medusa start",
     "dev": "medusa develop",
     "db:migrate": "medusa db:migrate",
