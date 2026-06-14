@@ -26,9 +26,10 @@ import { LOT_COA_MODULE } from "../modules/lot-coa"
  * Prereqs: the base catalog must already be seeded (sales channel, shipping
  * profile, stock location, region) — i.e. `npm run seed` has run at least once.
  *
+ * Variant PRICES below are FINAL (12mg=$105, 20mg=$200, 30mg=$240, 60mg=$400).
+ * Volume tiers derive from these bases — re-run `npm run volume:tiers` if changed.
+ *
  * ⚠️ PLACEHOLDERS to review in Admin before this is truly public:
- *   - Variant PRICES below are illustrative (mirrored from a competitor) — set
- *     your real pricing.
  *   - CAS number is from public sources; molecular formula / weights are left
  *     blank deliberately (don't ship fabricated specs) — fill them in Admin.
  *   - The lot data is transcribed from the Vanguard CoA (Lot 1234, 99.54%).
@@ -115,28 +116,28 @@ export default async function seedRetatrutide({ container, args }: ExecArgs) {
                 sku: "RETA-12MG",
                 options: { Size: "12 mg" },
                 manage_inventory: true,
-                prices: [{ amount: 105, currency_code: "usd" }], // placeholder $
+                prices: [{ amount: 105, currency_code: "usd" }], // final
               },
               {
                 title: "20 mg",
                 sku: "RETA-20MG",
                 options: { Size: "20 mg" },
                 manage_inventory: true,
-                prices: [{ amount: 200, currency_code: "usd" }], // placeholder $
+                prices: [{ amount: 200, currency_code: "usd" }], // final
               },
               {
                 title: "30 mg",
                 sku: "RETA-30MG",
                 options: { Size: "30 mg" },
                 manage_inventory: true,
-                prices: [{ amount: 240, currency_code: "usd" }], // placeholder $
+                prices: [{ amount: 240, currency_code: "usd" }], // final
               },
               {
                 title: "60 mg",
                 sku: "RETA-60MG",
                 options: { Size: "60 mg" },
                 manage_inventory: true,
-                prices: [{ amount: 400, currency_code: "usd" }], // placeholder $
+                prices: [{ amount: 400, currency_code: "usd" }], // final
               },
             ],
           },
