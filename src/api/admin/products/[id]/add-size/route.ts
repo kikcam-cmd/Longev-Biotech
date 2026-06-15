@@ -1,12 +1,12 @@
 import { MedusaRequest, MedusaResponse } from "@medusajs/framework/http"
-import { ContainerRegistrationKeys, Modules } from "@medusajs/framework/utils"
+import { ContainerRegistrationKeys } from "@medusajs/framework/utils"
 import {
   createInventoryLevelsWorkflow,
   createProductVariantsWorkflow,
   updateInventoryLevelsWorkflow,
   updateProductOptionsWorkflow,
 } from "@medusajs/medusa/core-flows"
-import { TIERS, tierPrice } from "../../../../../scripts/set-volume-tiers"
+import { TIERS, tierPrice } from "../../../../../lib/volume-tiers"
 
 /**
  * POST /admin/products/:id/add-size
@@ -33,7 +33,6 @@ export const POST = async (req: MedusaRequest, res: MedusaResponse) => {
   }
 
   const query = req.scope.resolve(ContainerRegistrationKeys.QUERY)
-  const pricing = req.scope.resolve(Modules.PRICING)
 
   // ── Resolve product + its "Size" option + existing variants ────────────────
   const { data: products } = await query.graph({
@@ -102,26 +101,11 @@ export const POST = async (req: MedusaRequest, res: MedusaResponse) => {
     stocked = true
   }
 
-  // ── 4. Apply per-vial volume tiers to the new variant ──────────────────────
-  let tiered = false
-  const { data: links } = await query.graph({
-    entity: "product_variant_price_set",
-    fields: ["variant_id", "price_set_id"],
-    filters: { variant_id: variant.id },
-  })
-  const priceSetId = links?.[0]?.price_set_id
-  if (priceSetId) {
-    await pricing.addPrices({
-      priceSetId,
-      prices: TIERS.map((t) => ({
-        currency_code: "usd",
-        amount: tierPrice(price, t.pct),
-        min_quantity: t.minQty,
-        ...(t.maxQty != null ? { max_quantity: t.maxQty } : {}),
-      })),
-    })
-    tiered = true
-  }
+  // ── 4. Volume tiers are applied by the variant-tiers-init subscriber (the
+  //       SOLE tier applier — applying here too would race its remove-then-add on
+  //       the same price set and produce duplicate tier prices). It fires on the
+  //       variant.created event this workflow just emitted.
+  const tiered = true
 
   res.json({
     variant: { id: variant.id, title: variant.title, sku },
