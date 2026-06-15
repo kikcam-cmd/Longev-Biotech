@@ -3,6 +3,7 @@ import { ContainerRegistrationKeys, Modules } from "@medusajs/framework/utils"
 import {
   createInventoryLevelsWorkflow,
   createProductVariantsWorkflow,
+  updateInventoryLevelsWorkflow,
   updateProductOptionsWorkflow,
 } from "@medusajs/medusa/core-flows"
 import { TIERS, tierPrice } from "../../../../../scripts/set-volume-tiers"
@@ -80,15 +81,24 @@ export const POST = async (req: MedusaRequest, res: MedusaResponse) => {
   // ── 3. Stock it at the US Warehouse ────────────────────────────────────────
   const [{ data: locs }, { data: invItems }] = await Promise.all([
     query.graph({ entity: "stock_location", fields: ["id", "name"], filters: { name: "US Warehouse" } }),
-    query.graph({ entity: "inventory_item", fields: ["id", "sku"], filters: { sku } }),
+    query.graph({ entity: "inventory_item", fields: ["id", "sku", "location_levels.location_id"], filters: { sku } }),
   ])
   const location = locs?.[0]
   const invItem = invItems?.[0]
   let stocked = false
   if (location && invItem) {
-    await createInventoryLevelsWorkflow(req.scope).run({
-      input: { inventory_levels: [{ inventory_item_id: invItem.id, location_id: location.id, stocked_quantity: stockQty }] },
-    })
+    // The variant-stock-init subscriber may have already seeded a qty-0 level for
+    // this item — update it instead of creating a duplicate (else a race throws).
+    const existingLevel = (invItem.location_levels ?? []).some((l: any) => l.location_id === location.id)
+    if (existingLevel) {
+      await updateInventoryLevelsWorkflow(req.scope).run({
+        input: { updates: [{ inventory_item_id: invItem.id, location_id: location.id, stocked_quantity: stockQty }] },
+      })
+    } else {
+      await createInventoryLevelsWorkflow(req.scope).run({
+        input: { inventory_levels: [{ inventory_item_id: invItem.id, location_id: location.id, stocked_quantity: stockQty }] },
+      })
+    }
     stocked = true
   }
 
